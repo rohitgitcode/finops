@@ -1,0 +1,38 @@
+# Environment variables & secrets (CRITICAL: Do NOT push real keys to GitHub)
+.env
+.env.*
+!.env.example
+
+# Python bytecode & cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Uploaded / temporary PDF files & temp dirs
+*.pdf
+temp/
+tmp/
+
+# Testing & coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Logs
+*.log
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+

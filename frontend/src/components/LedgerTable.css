@@ -1,0 +1,229 @@
+.ledger-card {
+  width: 100%;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.ledger-toolbar {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: var(--bg-surface);
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ledger-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+.ledger-count {
+  font-size: 12px;
+  color: var(--text-muted);
+  background-color: var(--bg-subtle);
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--border-subtle);
+}
+
+.toolbar-filters {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.filter-btn {
+  font-size: 12px;
+  padding: 5px 10px;
+  background-color: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  transition: all 0.15s ease;
+}
+
+.filter-btn:hover {
+  background-color: var(--bg-subtle);
+  color: var(--text-primary);
+}
+
+.filter-btn.active {
+  background-color: var(--accent-primary);
+  color: var(--accent-contrast);
+  border-color: var(--accent-primary);
+}
+
+.table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.ledger-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 13px;
+}
+
+.ledger-table th {
+  background-color: var(--bg-subtle);
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-subtle);
+  white-space: nowrap;
+}
+
+.ledger-table td {
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.ledger-row:hover {
+  background-color: #fafbfc;
+}
+
+.cell-right {
+  text-align: right;
+}
+
+.cell-center {
+  text-align: center;
+}
+
+.cell-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.cell-primary {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.cell-muted {
+  color: var(--text-muted);
+}
+
+.cell-amount {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.category-tag {
+  display: inline-block;
+  font-size: 11px;
+  background-color: var(--bg-subtle);
+  color: var(--text-secondary);
+  padding: 2px 7px;
+  border-radius: 3px;
+  border: 1px solid var(--border-subtle);
+}
+
+.risk-indicator {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.risk-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.risk-low {
+  background-color: #10b981;
+}
+
+.risk-medium {
+  background-color: #f59e0b;
+}
+
+.risk-high {
+  background-color: #ef4444;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+.badge-approved {
+  background-color: var(--status-approved-bg);
+  color: var(--status-approved-text);
+  border: 1px solid var(--status-approved-border);
+}
+
+.badge-quarantined {
+  background-color: var(--status-quarantine-bg);
+  color: var(--status-quarantine-text);
+  border: 1px solid var(--status-quarantine-border);
+}
+
+.badge-pending {
+  background-color: var(--status-flagged-bg);
+  color: var(--status-flagged-text);
+  border: 1px solid var(--status-flagged-border);
+}
+
+.badge-default {
+  background-color: var(--bg-subtle);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-subtle);
+}
+
+.inspect-btn {
+  background-color: transparent;
+  color: var(--text-secondary);
+  padding: 6px;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.inspect-btn:hover {
+  background-color: var(--bg-subtle);
+  border-color: var(--border-subtle);
+  color: var(--text-primary);
+}
+
+.empty-cell {
+  text-align: center;
+  padding: 36px 16px;
+  color: var(--text-muted);
+}

@@ -2,56 +2,66 @@
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .upload-zone {
   width: 100%;
   background-color: var(--bg-surface);
   border: 1px dashed var(--border-strong);
-  border-radius: 6px;
-  padding: 32px 24px;
+  border-radius: var(--radius-lg);
+  padding: 36px 24px;
   text-align: center;
   cursor: pointer;
-  transition: border-color 0.15s ease, background-color 0.15s ease;
+  transition: all 0.15s ease-in-out;
+  box-shadow: var(--shadow-xs);
 }
 
 .upload-zone:hover {
-  border-color: var(--text-secondary);
-  background-color: var(--bg-subtle);
+  border-color: #94a3b8;
+  background-color: #fcfdfe;
 }
 
 .upload-zone.drag-active {
-  border-color: var(--accent-primary);
-  background-color: var(--bg-subtle);
+  border-color: var(--accent-blue);
+  background-color: var(--accent-blue-subtle);
 }
 
-.upload-zone.disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
+.upload-zone.processing {
+  opacity: 0.85;
+  cursor: wait;
   pointer-events: none;
+  background-color: #fafbfc;
+  border-style: solid;
+  border-color: var(--border-strong);
 }
 
 .upload-content {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
 }
 
 .icon-wrapper {
-  width: 48px;
-  height: 48px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   background-color: var(--bg-subtle);
   border: 1px solid var(--border-subtle);
   display: flex;
   align-items: center;
   justify-content: center;
+  color: var(--text-secondary);
+}
+
+.upload-zone:hover .icon-wrapper {
+  color: var(--text-primary);
+  background-color: var(--bg-muted);
 }
 
 .upload-icon {
-  color: var(--text-secondary);
+  stroke-width: 1.75;
 }
 
 .text-group {
@@ -64,10 +74,12 @@
   font-size: 14px;
   font-weight: 500;
   color: var(--text-primary);
+  line-height: 1.4;
 }
 
-.action-link {
+.browse-link {
   color: var(--accent-primary);
+  font-weight: 600;
   text-decoration: underline;
   text-underline-offset: 3px;
 }
@@ -75,6 +87,26 @@
 .secondary-text {
   font-size: 12px;
   color: var(--text-muted);
+}
+
+.upload-badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.badge-chip {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  background-color: var(--bg-subtle);
+  border: 1px solid var(--border-subtle);
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  letter-spacing: 0.01em;
 }
 
 .validation-banner {
@@ -85,8 +117,9 @@
   border: 1px solid var(--status-quarantine-border);
   color: var(--status-quarantine-text);
   padding: 10px 14px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   font-size: 13px;
+  font-weight: 500;
 }
 
 .error-icon {

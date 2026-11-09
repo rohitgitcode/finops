@@ -6,7 +6,10 @@ import {
   Layers, 
   RefreshCw, 
   X, 
-  AlertCircle 
+  AlertCircle,
+  CheckCircle,
+  Database,
+  ExternalLink
 } from "lucide-react";
 
 import UploadZone from "./components/UploadZone";
@@ -36,7 +39,7 @@ export default function App() {
       setInvoices(data.invoices || []);
     } catch (err) {
       console.error("Failed to fetch invoices:", err);
-      setGlobalError("Unable to connect to the backend ledger. Ensure FastAPI server is running.");
+      setGlobalError("Unable to connect to backend ledger. Ensure FastAPI server is running on port 8000.");
     } finally {
       setIsLoadingLedger(false);
     }
@@ -101,20 +104,27 @@ export default function App() {
               <Building2 size={18} className="brand-icon" />
             </div>
             <div>
-              <h1 className="brand-title">LedgerMind FinOps</h1>
-              <span className="brand-subtitle">Autonomous AP Ingestion & Audit Engine</span>
+              <div className="brand-title-row">
+                <h1 className="brand-title">LedgerMind FinOps</h1>
+                <span className="env-badge">Production Engine</span>
+              </div>
+              <span className="brand-subtitle">Autonomous AP Ingestion & Audit Pipeline</span>
             </div>
           </div>
 
           <div className="header-actions">
+            <div className="db-status-pill">
+              <span className="status-dot-active" />
+              <span>PostgreSQL Connected</span>
+            </div>
             <button 
               className="sync-btn" 
               onClick={fetchInvoices} 
               disabled={isLoadingLedger}
               title="Refresh ledger state"
             >
-              <RefreshCw size={14} className={isLoadingLedger ? "animate-spin" : ""} />
-              <span>Refresh Ledger</span>
+              <RefreshCw size={13} className={isLoadingLedger ? "animate-spin" : ""} />
+              <span>Refresh</span>
             </button>
           </div>
         </div>
@@ -122,48 +132,56 @@ export default function App() {
 
       {globalError && (
         <div className="global-error-banner">
-          <AlertCircle size={16} />
-          <span>{globalError}</span>
-          <button className="error-close-btn" onClick={() => setGlobalError("")}>
+          <AlertCircle size={15} className="error-icon" />
+          <span className="error-text">{globalError}</span>
+          <button className="error-close-btn" onClick={() => setGlobalError("")} title="Dismiss">
             <X size={14} />
           </button>
         </div>
       )}
 
       <main className="app-main">
+        {/* KPI Summary Cards */}
         <section className="metrics-grid">
           <div className="metric-card">
             <div className="metric-header">
               <span className="metric-label">Processed Ledger Entries</span>
-              <Layers size={16} className="metric-icon" />
+              <div className="metric-icon-wrap">
+                <Layers size={15} />
+              </div>
             </div>
             <div className="metric-value">{invoices.length}</div>
-            <span className="metric-subtext">Committed to PostgreSQL</span>
+            <span className="metric-subtext">Committed to PostgreSQL master ledger</span>
           </div>
 
           <div className="metric-card">
             <div className="metric-header">
               <span className="metric-label">Audited Approved Spend</span>
-              <FileCheck2 size={16} className="metric-icon" />
+              <div className="metric-icon-wrap">
+                <FileCheck2 size={15} />
+              </div>
             </div>
             <div className="metric-value">
               {new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(totalSpend)}
             </div>
-            <span className="metric-subtext">Within authorized policy thresholds</span>
+            <span className="metric-subtext">Verified within authorized spending limits</span>
           </div>
 
           <div className="metric-card">
             <div className="metric-header">
               <span className="metric-label">Quarantine & Escalations</span>
-              <ShieldAlert size={16} className="metric-icon metric-icon-alert" />
+              <div className="metric-icon-wrap metric-icon-alert-wrap">
+                <ShieldAlert size={15} className="metric-icon-alert" />
+              </div>
             </div>
             <div className="metric-value metric-value-alert">{quarantinedCount + pendingCount}</div>
             <span className="metric-subtext">
-              {quarantinedCount} duplicate/fraud risks, {pendingCount} policy reviews
+              {quarantinedCount} duplicate/fraud risks • {pendingCount} policy reviews
             </span>
           </div>
         </section>
 
+        {/* Upload & Agent Pipeline Execution */}
         <section className="pipeline-grid">
           <div className="pipeline-upload-col">
             <UploadZone onFileUpload={handleFileUpload} isProcessing={isProcessingFile} />
@@ -177,6 +195,7 @@ export default function App() {
           </div>
         </section>
 
+        {/* Master Ledger Section */}
         <section className="ledger-section">
           <LedgerTable 
             invoices={invoices} 
@@ -186,56 +205,109 @@ export default function App() {
         </section>
       </main>
 
+      {/* Invoice Detail Inspection Drawer */}
       {selectedInvoice && (
         <div className="drawer-overlay" onClick={() => setSelectedInvoice(null)}>
           <div className="drawer-panel" onClick={(e) => e.stopPropagation()}>
             <div className="drawer-header">
               <div>
-                <h3 className="drawer-title">Invoice Audit Inspection</h3>
-                <span className="drawer-subtitle">
-                  {selectedInvoice.invoice_number || `Record #${selectedInvoice.id}`}
-                </span>
+                <span className="drawer-pretitle">Audit Record Details</span>
+                <h3 className="drawer-title">
+                  {selectedInvoice.invoice_number || `INV-#${selectedInvoice.id}`}
+                </h3>
               </div>
-              <button className="drawer-close-btn" onClick={() => setSelectedInvoice(null)}>
+              <button 
+                className="drawer-close-btn" 
+                onClick={() => setSelectedInvoice(null)}
+                title="Close drawer"
+              >
                 <X size={16} />
               </button>
             </div>
 
             <div className="drawer-content">
-              <div className="drawer-field-group">
-                <span className="field-label">Vendor Name</span>
-                <span className="field-value">{selectedInvoice.vendor_name}</span>
-              </div>
-
-              <div className="drawer-field-group">
-                <span className="field-label">Expense Category</span>
-                <span className="field-value">{selectedInvoice.category}</span>
-              </div>
-
-              <div className="drawer-field-group">
-                <span className="field-label">Payable Amount</span>
-                <span className="field-value">
-                  {new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(
-                    selectedInvoice.amount
-                  )}
-                </span>
-              </div>
-
-              <div className="drawer-field-group">
-                <span className="field-label">Assessed Risk Score</span>
-                <span className="field-value">{selectedInvoice.risk_score} / 100</span>
-              </div>
-
-              <div className="drawer-field-group">
-                <span className="field-label">Audit Engine Verdict</span>
-                <div className="audit-flags-panel">
-                  {selectedInvoice.flag_reason || "All compliance and duplication checks passed successfully."}
+              {/* Highlight summary card */}
+              <div className="drawer-summary-card">
+                <div className="summary-row">
+                  <span className="summary-label">Amount Payable</span>
+                  <span className="summary-amount">
+                    {new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(
+                      selectedInvoice.amount
+                    )}
+                  </span>
+                </div>
+                <div className="summary-row">
+                  <span className="summary-label">Status</span>
+                  <span className={`summary-status-pill status-${selectedInvoice.status.toLowerCase()}`}>
+                    {selectedInvoice.status.replace("_", " ")}
+                  </span>
                 </div>
               </div>
 
-              <div className="drawer-field-group">
-                <span className="field-label">Recorded At</span>
-                <span className="field-value-secondary">{selectedInvoice.created_at}</span>
+              <div className="drawer-section">
+                <h4 className="drawer-section-heading">Vendor & Invoicing</h4>
+                
+                <div className="drawer-field-group">
+                  <span className="field-label">Vendor Name</span>
+                  <span className="field-value">{selectedInvoice.vendor_name}</span>
+                </div>
+
+                <div className="drawer-field-group">
+                  <span className="field-label">Expense Category</span>
+                  <span className="field-value">{selectedInvoice.category}</span>
+                </div>
+
+                <div className="drawer-field-group">
+                  <span className="field-label">Invoice Date</span>
+                  <span className="field-value">{selectedInvoice.invoice_date || "-"}</span>
+                </div>
+              </div>
+
+              <div className="drawer-section">
+                <h4 className="drawer-section-heading">Automated Risk & Policy Audit</h4>
+
+                <div className="drawer-field-group">
+                  <span className="field-label">Risk Assessment</span>
+                  <div className="drawer-risk-bar-wrap">
+                    <div className="drawer-risk-header">
+                      <span className="risk-score-text">Risk Score: {selectedInvoice.risk_score} / 100</span>
+                      <span className="risk-level-tag">
+                        {selectedInvoice.risk_score > 70 ? "High Risk" : selectedInvoice.risk_score > 30 ? "Medium Risk" : "Low Risk"}
+                      </span>
+                    </div>
+                    <div className="risk-track">
+                      <div 
+                        className={`risk-fill ${
+                          selectedInvoice.risk_score > 70
+                            ? "fill-high"
+                            : selectedInvoice.risk_score > 30
+                            ? "fill-medium"
+                            : "fill-low"
+                        }`}
+                        style={{ width: `${Math.min(selectedInvoice.risk_score, 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="drawer-field-group">
+                  <span className="field-label">Audit Engine Findings</span>
+                  <div className="audit-flags-panel">
+                    {selectedInvoice.flag_reason || "All compliance, deduplication, and policy limit checks passed."}
+                  </div>
+                </div>
+              </div>
+
+              <div className="drawer-section">
+                <h4 className="drawer-section-heading">System Metadata</h4>
+                <div className="drawer-field-group">
+                  <span className="field-label">Record ID</span>
+                  <span className="field-value-secondary">#{selectedInvoice.id}</span>
+                </div>
+                <div className="drawer-field-group">
+                  <span className="field-label">Created At</span>
+                  <span className="field-value-secondary">{selectedInvoice.created_at || "-"}</span>
+                </div>
               </div>
             </div>
           </div>

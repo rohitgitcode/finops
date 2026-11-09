@@ -1,36 +1,72 @@
-import React, { useState } from "react";
-import { ShieldCheck, AlertOctagon, Clock, ExternalLink } from "lucide-react";
+import React, { useState, useMemo } from "react";
+import { 
+  ShieldCheck, 
+  AlertOctagon, 
+  Clock, 
+  Search, 
+  X, 
+  SlidersHorizontal,
+  ChevronRight,
+  FileText
+} from "lucide-react";
 import "./LedgerTable.css";
 
 export default function LedgerTable({ invoices, isLoading, onSelectInvoice }) {
   const [filterStatus, setFilterStatus] = useState("ALL");
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const filteredInvoices = invoices.filter((item) => {
-    if (filterStatus === "ALL") return true;
-    return item.status === filterStatus;
-  });
+  const counts = useMemo(() => {
+    return {
+      ALL: invoices.length,
+      APPROVED: invoices.filter((i) => i.status === "APPROVED").length,
+      PENDING_APPROVAL: invoices.filter((i) => i.status === "PENDING_APPROVAL").length,
+      QUARANTINED: invoices.filter((i) => i.status === "QUARANTINED").length,
+    };
+  }, [invoices]);
+
+  const filteredInvoices = useMemo(() => {
+    return invoices.filter((item) => {
+      const matchesStatus = filterStatus === "ALL" || item.status === filterStatus;
+      if (!matchesStatus) return false;
+
+      if (!searchQuery.trim()) return true;
+
+      const q = searchQuery.toLowerCase();
+      const invNum = (item.invoice_number || "").toLowerCase();
+      const vendor = (item.vendor_name || "").toLowerCase();
+      const category = (item.category || "").toLowerCase();
+      const amount = String(item.amount || "");
+
+      return (
+        invNum.includes(q) ||
+        vendor.includes(q) ||
+        category.includes(q) ||
+        amount.includes(q)
+      );
+    });
+  }, [invoices, filterStatus, searchQuery]);
 
   const getStatusBadge = (status) => {
     switch (status) {
       case "APPROVED":
         return (
           <span className="badge badge-approved">
-            <ShieldCheck size={13} />
+            <ShieldCheck size={12} />
             <span>Approved</span>
           </span>
         );
       case "QUARANTINED":
         return (
           <span className="badge badge-quarantined">
-            <AlertOctagon size={13} />
+            <AlertOctagon size={12} />
             <span>Quarantined</span>
           </span>
         );
       case "PENDING_APPROVAL":
         return (
           <span className="badge badge-pending">
-            <Clock size={13} />
-            <span>Needs Approval</span>
+            <Clock size={12} />
+            <span>Needs Review</span>
           </span>
         );
       default:
@@ -64,20 +100,46 @@ export default function LedgerTable({ invoices, isLoading, onSelectInvoice }) {
     <div className="ledger-card">
       <div className="ledger-toolbar">
         <div className="toolbar-left">
-          <h3 className="ledger-title">Financial Operations Ledger</h3>
-          <span className="ledger-count">
-            {filteredInvoices.length} {filteredInvoices.length === 1 ? "record" : "records"}
-          </span>
+          <div className="title-group">
+            <h3 className="ledger-title">Financial Operations Ledger</h3>
+            <span className="ledger-count-pill">{filteredInvoices.length} of {invoices.length}</span>
+          </div>
+
+          <div className="search-box">
+            <Search size={14} className="search-icon" />
+            <input
+              type="text"
+              placeholder="Search vendor, invoice #, category..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="search-input"
+            />
+            {searchQuery && (
+              <button 
+                className="search-clear-btn" 
+                onClick={() => setSearchQuery("")}
+                title="Clear search"
+              >
+                <X size={12} />
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="toolbar-filters">
-          {["ALL", "APPROVED", "PENDING_APPROVAL", "QUARANTINED"].map((st) => (
+          {[
+            { id: "ALL", label: "All" },
+            { id: "APPROVED", label: "Approved" },
+            { id: "PENDING_APPROVAL", label: "Needs Review" },
+            { id: "QUARANTINED", label: "Quarantined" }
+          ].map((st) => (
             <button
-              key={st}
-              className={`filter-btn ${filterStatus === st ? "active" : ""}`}
-              onClick={() => setFilterStatus(st)}
+              key={st.id}
+              className={`filter-tab ${filterStatus === st.id ? "active" : ""}`}
+              onClick={() => setFilterStatus(st.id)}
             >
-              {st === "ALL" ? "All Records" : st.replace("_", " ")}
+              <span>{st.label}</span>
+              <span className="filter-count">{counts[st.id] ?? 0}</span>
             </button>
           ))}
         </div>
@@ -87,10 +149,10 @@ export default function LedgerTable({ invoices, isLoading, onSelectInvoice }) {
         <table className="ledger-table">
           <thead>
             <tr>
-              <th>Invoice Ref</th>
+              <th>Invoice #</th>
               <th>Vendor</th>
               <th>Category</th>
-              <th>Date</th>
+              <th>Issue Date</th>
               <th className="cell-right">Amount</th>
               <th>Risk Score</th>
               <th>Audit Status</th>
@@ -101,18 +163,33 @@ export default function LedgerTable({ invoices, isLoading, onSelectInvoice }) {
             {isLoading ? (
               <tr>
                 <td colSpan="8" className="empty-cell">
-                  Loading ledger entries from PostgreSQL...
+                  <div className="loading-state">
+                    <span className="loading-spinner animate-spin" />
+                    <span>Loading ledger records from PostgreSQL...</span>
+                  </div>
                 </td>
               </tr>
             ) : filteredInvoices.length === 0 ? (
               <tr>
                 <td colSpan="8" className="empty-cell">
-                  No invoices found matching criteria.
+                  <div className="empty-state">
+                    <FileText size={24} className="empty-icon" />
+                    <p className="empty-text">No invoices match the selected filter or search query.</p>
+                    {searchQuery && (
+                      <button className="clear-filter-btn" onClick={() => setSearchQuery("")}>
+                        Clear search filter
+                      </button>
+                    )}
+                  </div>
                 </td>
               </tr>
             ) : (
               filteredInvoices.map((inv) => (
-                <tr key={inv.id} className="ledger-row">
+                <tr 
+                  key={inv.id} 
+                  className="ledger-row"
+                  onClick={() => onSelectInvoice && onSelectInvoice(inv)}
+                >
                   <td className="cell-mono">{inv.invoice_number || `INV-#${inv.id}`}</td>
                   <td className="cell-primary">{inv.vendor_name}</td>
                   <td>
@@ -135,13 +212,14 @@ export default function LedgerTable({ invoices, isLoading, onSelectInvoice }) {
                     </div>
                   </td>
                   <td>{getStatusBadge(inv.status)}</td>
-                  <td className="cell-center">
+                  <td className="cell-center" onClick={(e) => e.stopPropagation()}>
                     <button
                       className="inspect-btn"
                       onClick={() => onSelectInvoice && onSelectInvoice(inv)}
-                      title="Inspect full audit trail"
+                      title="Inspect full audit record"
                     >
-                      <ExternalLink size={14} />
+                      <span>View</span>
+                      <ChevronRight size={13} />
                     </button>
                   </td>
                 </tr>

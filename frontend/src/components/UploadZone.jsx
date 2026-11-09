@@ -1,10 +1,11 @@
 import React, { useState, useRef } from "react";
-import { UploadCloud, FileText, AlertCircle } from "lucide-react";
+import { UploadCloud, FileText, AlertCircle, Loader2, CheckCircle2 } from "lucide-react";
 import "./UploadZone.css";
 
 export default function UploadZone({ onFileUpload, isProcessing }) {
   const [isDragOver, setIsDragOver] = useState(false);
   const [validationError, setValidationError] = useState("");
+  const [lastUploadedName, setLastUploadedName] = useState("");
   const fileInputRef = useRef(null);
 
   const validateAndPassFile = (file) => {
@@ -13,17 +14,18 @@ export default function UploadZone({ onFileUpload, isProcessing }) {
     if (!file) return;
 
     if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
-      setValidationError("Unsupported format. Please upload a valid PDF invoice.");
+      setValidationError("Unsupported format. Please upload an invoice in PDF format.");
       return;
     }
 
-    // Limit to 10MB
+    // 10MB limit
     const maxSizeBytes = 10 * 1024 * 1024;
     if (file.size > maxSizeBytes) {
-      setValidationError("Document exceeds 10MB limit. Select a smaller file.");
+      setValidationError("File exceeds 10MB limit. Please select a smaller PDF.");
       return;
     }
 
+    setLastUploadedName(file.name);
     onFileUpload(file);
   };
 
@@ -60,7 +62,7 @@ export default function UploadZone({ onFileUpload, isProcessing }) {
     <div className="upload-container">
       <div
         className={`upload-zone ${isDragOver ? "drag-active" : ""} ${
-          isProcessing ? "disabled" : ""
+          isProcessing ? "processing" : ""
         }`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
@@ -77,21 +79,44 @@ export default function UploadZone({ onFileUpload, isProcessing }) {
 
         <div className="upload-content">
           <div className="icon-wrapper">
-            <UploadCloud className="upload-icon" size={28} />
+            {isProcessing ? (
+              <Loader2 className="upload-icon animate-spin" size={24} />
+            ) : (
+              <UploadCloud className="upload-icon" size={24} />
+            )}
           </div>
 
           <div className="text-group">
-            <p className="primary-text">
-              <span className="action-link">Click to upload</span> or drag and drop invoice PDF
-            </p>
-            <p className="secondary-text">Standard AcroForm, digital bills, and system invoices up to 10MB</p>
+            {isProcessing ? (
+              <>
+                <p className="primary-text">Processing {lastUploadedName || "invoice"}...</p>
+                <p className="secondary-text">Running multi-agent perception, audit, and ledger settlement</p>
+              </>
+            ) : (
+              <>
+                <p className="primary-text">
+                  <span className="browse-link">Upload invoice</span> or drag and drop here
+                </p>
+                <p className="secondary-text">
+                  PDF format with vector text, AcroForms, or digital invoices up to 10MB
+                </p>
+              </>
+            )}
           </div>
+
+          {!isProcessing && (
+            <div className="upload-badges">
+              <span className="badge-chip">PDF Document</span>
+              <span className="badge-chip">Max 10MB</span>
+              <span className="badge-chip">Automated Audit</span>
+            </div>
+          )}
         </div>
       </div>
 
       {validationError && (
         <div className="validation-banner">
-          <AlertCircle size={16} className="error-icon" />
+          <AlertCircle size={15} className="error-icon" />
           <span>{validationError}</span>
         </div>
       )}

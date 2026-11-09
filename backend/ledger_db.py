@@ -1,8 +1,12 @@
 import os
 import psycopg2
 from psycopg2.extras import RealDictCursor
+from pathlib import Path
 from dotenv import load_dotenv
 
+# Load environment variables
+env_path = Path(__file__).resolve().parent / ".env"
+load_dotenv(dotenv_path=env_path)
 load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -13,89 +17,80 @@ def get_connection():
         raise ValueError("DATABASE_URL is not set in the environment or .env file.")
     return psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
 
-def init_db():
-    """Initialize database tables and seed baseline verification records."""
-    print("[1/4] Connecting to Neon PostgreSQL...")
+# Alias for connection function
+get_db_connection = get_connection
+
+def update_invoice_review(invoice_id: int, new_status: str, reviewer_note: str) -> bool:
+    """
+    Update the verification status of an invoice and append an immutable audit log.
+    Action: 'MANUAL_APPROVAL_OVERRIDE' if new_status is 'APPROVED' else 'MANUAL_REJECTION_VOID'.
+    Notes: f"Manager Review: {reviewer_note}"
+    """
     conn = get_connection()
     cursor = conn.cursor()
+    try:
+        # 1. Update invoice status
+        cursor.execute(
+            """
+            UPDATE invoices 
+            SET status = %s 
+            WHERE id = %s;
+            """,
+            (new_status, invoice_id)
+        )
 
-    print("[2/4] Dropping existing tables if any...")
-    cursor.execute("DROP TABLE IF EXISTS audit_logs;")
-    cursor.execute("DROP TABLE IF EXISTS invoices;")
-    cursor.execute("DROP TABLE IF EXISTS expense_policies;")
+        # 2. Append immutable audit log
+        action_label = (
+            "MANUAL_APPROVAL_OVERRIDE" 
+            if new_status == "APPROVED" 
+            else "MANUAL_REJECTION_VOID"
+        )
+        note_clean = reviewer_note.strip() if reviewer_note else "No override justification provided"
+        reasoning_text = f"Manager Review: {note_clean}"
 
-    print("[3/4] Creating enterprise schema...")
-    
-    # 1. Expense Policies Table
-    cursor.execute("""
-    CREATE TABLE expense_policies (
-        id SERIAL PRIMARY KEY,
-        category VARCHAR(100) NOT NULL UNIQUE,
-        max_single_limit NUMERIC(12, 2) NOT NULL,
-        require_manager_approval BOOLEAN DEFAULT FALSE
-    );
-    """)
+        cursor.execute(
+            """
+            INSERT INTO audit_logs (invoice_id, agent_name, action_taken, action, notes, reasoning)
+            VALUES (%s, %s, %s, %s, %s, %s);
+            """,
+            (invoice_id, "HumanReviewer", action_label, action_label, reasoning_text, reasoning_text)
+        )
 
-    # 2. Invoices Master Table
-    cursor.execute("""
-    CREATE TABLE invoices (
-        id SERIAL PRIMARY KEY,
-        invoice_number VARCHAR(100) NOT NULL,
-        vendor_name VARCHAR(255) NOT NULL,
-        category VARCHAR(100) NOT NULL,
-        amount NUMERIC(12, 2) NOT NULL,
-        invoice_date DATE NOT NULL,
-        status VARCHAR(50) DEFAULT 'PENDING_AUDIT',
-        risk_score INT DEFAULT 0,
-        flag_reason TEXT DEFAULT '',
-        raw_text TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-    """)
+        conn.commit()
+        return True
+    except Exception as exc:
+        conn.rollback()
+        raise RuntimeError(f"Database error during invoice review update: {str(exc)}")
+    finally:
+        cursor.close()
+        conn.close()
 
-    # 3. Immutable Audit Trail
-    cursor.execute("""
-    CREATE TABLE audit_logs (
-        id SERIAL PRIMARY KEY,
-        invoice_id INT REFERENCES invoices(id) ON DELETE CASCADE,
-        agent_name VARCHAR(50) NOT NULL,
-        action_taken VARCHAR(100) NOT NULL,
-        reasoning TEXT,
-        logged_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-    """)
+def init_db():
+    """
+    Locates and reads backend/schema.sql and applies non-destructive DDL
+    migrations and index creation to PostgreSQL NeonDB.
+    """
+    schema_path = Path(__file__).resolve().parent / "schema.sql"
+    if not schema_path.exists():
+        raise FileNotFoundError(f"Schema file not found at path: {schema_path}")
 
-    print("[4/4] Seeding default policies and historical baseline records...")
+    with open(schema_path, "r", encoding="utf-8") as f:
+        schema_sql = f.read()
 
-    # Company expense rules
-    policies = [
-        ("Meals", 2000.0, False),
-        ("Travel", 15000.0, True),
-        ("Software", 25000.0, True),
-        ("Cloud & Infra", 50000.0, True),
-        ("Office Supplies", 5000.0, False),
-    ]
-    cursor.executemany("""
-    INSERT INTO expense_policies (category, max_single_limit, require_manager_approval)
-    VALUES (%s, %s, %s);
-    """, policies)
+    conn = get_db_connection()
+    cursor = conn.cursor()
 
-    # Historical invoice records used for duplicate and baseline auditing
-    historical_invoices = [
-        ("INV-9901", "Amazon Web Services", "Cloud & Infra", 45000.0, "2026-10-15", "APPROVED", 0, "Approved recurring cloud spend"),
-        ("INV-9902", "GitHub Inc", "Software", 1800.0, "2026-10-18", "APPROVED", 0, "Team developer licenses"),
-        ("INV-9903", "Uber India", "Travel", 750.0, "2026-10-20", "APPROVED", 0, "Approved client transit"),
-        ("INV-9904", "Swiggy Corporate", "Meals", 1200.0, "2026-10-22", "APPROVED", 0, "Approved team lunch"),
-    ]
-    cursor.executemany("""
-    INSERT INTO invoices (invoice_number, vendor_name, category, amount, invoice_date, status, risk_score, flag_reason)
-    VALUES (%s, %s, %s, %s, %s, %s, %s, %s);
-    """, historical_invoices)
-
-    conn.commit()
-    cursor.close()
-    conn.close()
-    print("[SUCCESS] Production database initialized successfully on Neon PostgreSQL.")
+    try:
+        cursor.execute(schema_sql)
+        conn.commit()
+        print("[Database] Schema synchronized successfully.")
+    except Exception as exc:
+        conn.rollback()
+        print(f"[Database] Schema synchronization failed: {str(exc)}")
+        raise
+    finally:
+        cursor.close()
+        conn.close()
 
 if __name__ == "__main__":
     init_db()

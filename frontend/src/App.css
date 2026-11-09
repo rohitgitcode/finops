@@ -408,6 +408,12 @@
   border: 1px solid var(--status-flagged-border);
 }
 
+.summary-status-pill.status-rejected {
+  background-color: var(--status-quarantine-bg);
+  color: var(--status-quarantine-text);
+  border: 1px solid var(--status-quarantine-border);
+}
+
 .drawer-section {
   display: flex;
   flex-direction: column;
@@ -520,4 +526,115 @@
   font-size: 12px;
   color: var(--text-secondary);
   line-height: 1.5;
+}
+
+/* Human-In-The-Loop (HITL) Governance Panel */
+.hitl-governance-section {
+  background-color: #fafbfc;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.hitl-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hitl-icon {
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.hitl-description {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.review-textarea {
+  width: 100%;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font-size: 13px;
+  font-family: var(--font-sans);
+  color: var(--text-primary);
+  background-color: var(--bg-surface);
+  resize: vertical;
+  min-height: 72px;
+  box-sizing: border-box;
+  transition: all 0.15s ease;
+}
+
+.review-textarea:focus {
+  outline: none;
+  border-color: #94a3b8;
+  box-shadow: 0 0 0 2px rgba(148, 163, 184, 0.15);
+}
+
+.review-textarea:disabled {
+  background-color: var(--bg-subtle);
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+.hitl-actions-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+@media (max-width: 480px) {
+  .hitl-actions-row {
+    flex-direction: column;
+  }
+}
+
+.btn-review-approve,
+.btn-review-reject {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  transition: all 0.15s ease;
+  box-shadow: var(--shadow-xs);
+  cursor: pointer;
+}
+
+.btn-review-approve {
+  background-color: #059669;
+  color: #ffffff;
+  border: 1px solid #047857;
+}
+
+.btn-review-approve:hover:not(:disabled) {
+  background-color: #047857;
+}
+
+.btn-review-reject {
+  background-color: #dc2626;
+  color: #ffffff;
+  border: 1px solid #b91c1c;
+}
+
+.btn-review-reject:hover:not(:disabled) {
+  background-color: #b91c1c;
+}
+
+.btn-review-approve:disabled,
+.btn-review-reject:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  box-shadow: none;
 }

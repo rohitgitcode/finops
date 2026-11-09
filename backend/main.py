@@ -9,7 +9,11 @@ from pydantic import BaseModel
 from extractor_agent import process_invoice_file
 from auditor_agent import AuditorAgent
 from resolver_agent import ResolutionAgent
-from ledger_db import get_connection
+from ledger_db import get_connection, update_invoice_review
+
+class ReviewRequest(BaseModel):
+    action: str
+    notes: str = ""
 
 app = FastAPI(
     title="LedgerMind Autonomous FinOps Engine",
@@ -108,3 +112,37 @@ async def upload_and_process_invoice(file: UploadFile = File(...)):
         # Clean up temporary file artifact
         if os.path.exists(temp_dir):
             shutil.rmtree(temp_dir, ignore_errors=True)
+
+@app.post("/api/invoices/{invoice_id}/review")
+def review_invoice(invoice_id: int, payload: ReviewRequest):
+    """
+    Human-in-the-Loop review endpoint:
+    Allows authorized managers to manually override or reject invoices.
+    Maps 'APPROVE' -> 'APPROVED' and 'REJECT' -> 'REJECTED'.
+    """
+    action_clean = payload.action.strip().upper()
+    if action_clean not in ("APPROVE", "REJECT"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid review action. Allowed values are strictly 'APPROVE' or 'REJECT'."
+        )
+
+    new_status = "APPROVED" if action_clean == "APPROVE" else "REJECTED"
+
+    try:
+        update_invoice_review(
+            invoice_id=invoice_id,
+            new_status=new_status,
+            reviewer_note=payload.notes
+        )
+        return {
+            "success": True,
+            "invoice_id": invoice_id,
+            "new_status": new_status,
+            "notes": payload.notes
+        }
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to record manual review: {str(exc)}"
+        )

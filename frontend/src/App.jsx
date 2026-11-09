@@ -9,7 +9,10 @@ import {
   AlertCircle,
   CheckCircle,
   Database,
-  ExternalLink
+  ExternalLink,
+  UserCheck,
+  Check,
+  Ban
 } from "lucide-react";
 
 import UploadZone from "./components/UploadZone";
@@ -27,6 +30,8 @@ export default function App() {
   const [pipelineResult, setPipelineResult] = useState(null);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [globalError, setGlobalError] = useState("");
+  const [reviewNotes, setReviewNotes] = useState("");
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
 
   const fetchInvoices = async () => {
     setIsLoadingLedger(true);
@@ -86,6 +91,49 @@ export default function App() {
     } finally {
       setIsProcessingFile(false);
     }
+  };
+
+  const handleReviewAction = async (action) => {
+    if (!selectedInvoice) return;
+    setIsSubmittingReview(true);
+    setGlobalError("");
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/invoices/${selectedInvoice.id}/review`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          action: action,
+          notes: reviewNotes,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || "Failed to record manual review decision.");
+      }
+
+      setReviewNotes("");
+      setSelectedInvoice(null);
+      await fetchInvoices();
+    } catch (err) {
+      console.error("Error submitting manual review:", err);
+      setGlobalError(err.message || "Manual review submission failed.");
+    } finally {
+      setIsSubmittingReview(false);
+    }
+  };
+
+  const closeDrawer = () => {
+    setReviewNotes("");
+    setSelectedInvoice(null);
+  };
+
+  const openDrawer = (invoice) => {
+    setReviewNotes("");
+    setSelectedInvoice(invoice);
   };
 
   const totalSpend = invoices
@@ -200,14 +248,14 @@ export default function App() {
           <LedgerTable 
             invoices={invoices} 
             isLoading={isLoadingLedger} 
-            onSelectInvoice={(inv) => setSelectedInvoice(inv)} 
+            onSelectInvoice={(inv) => openDrawer(inv)} 
           />
         </section>
       </main>
 
       {/* Invoice Detail Inspection Drawer */}
       {selectedInvoice && (
-        <div className="drawer-overlay" onClick={() => setSelectedInvoice(null)}>
+        <div className="drawer-overlay" onClick={closeDrawer}>
           <div className="drawer-panel" onClick={(e) => e.stopPropagation()}>
             <div className="drawer-header">
               <div>
@@ -218,7 +266,7 @@ export default function App() {
               </div>
               <button 
                 className="drawer-close-btn" 
-                onClick={() => setSelectedInvoice(null)}
+                onClick={closeDrawer}
                 title="Close drawer"
               >
                 <X size={16} />
@@ -297,6 +345,55 @@ export default function App() {
                   </div>
                 </div>
               </div>
+
+              {selectedInvoice.status !== "APPROVED" && selectedInvoice.status !== "REJECTED" && (
+                <div className="drawer-section hitl-governance-section">
+                  <div className="hitl-header">
+                    <UserCheck size={15} className="hitl-icon" />
+                    <h4 className="drawer-section-heading">Human-In-The-Loop Governance</h4>
+                  </div>
+                  <p className="hitl-description">
+                    Manual manager review required. Provide an audit justification note to override or reject this invoice record.
+                  </p>
+
+                  <div className="drawer-field-group">
+                    <label className="field-label" htmlFor="review-justification">
+                      Audit Justification / Override Notes
+                    </label>
+                    <textarea
+                      id="review-justification"
+                      className="review-textarea"
+                      placeholder="Enter justification or reason for status override..."
+                      rows={3}
+                      value={reviewNotes}
+                      onChange={(e) => setReviewNotes(e.target.value)}
+                      disabled={isSubmittingReview}
+                    />
+                  </div>
+
+                  <div className="hitl-actions-row">
+                    <button
+                      type="button"
+                      className="btn-review-approve"
+                      onClick={() => handleReviewAction("APPROVE")}
+                      disabled={isSubmittingReview}
+                    >
+                      <Check size={14} />
+                      <span>{isSubmittingReview ? "Submitting..." : "Force Approve (Override)"}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      className="btn-review-reject"
+                      onClick={() => handleReviewAction("REJECT")}
+                      disabled={isSubmittingReview}
+                    >
+                      <Ban size={14} />
+                      <span>{isSubmittingReview ? "Submitting..." : "Reject & Void"}</span>
+                    </button>
+                  </div>
+                </div>
+              )}
 
               <div className="drawer-section">
                 <h4 className="drawer-section-heading">System Metadata</h4>

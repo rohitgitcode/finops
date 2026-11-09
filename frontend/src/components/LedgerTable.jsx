@@ -7,7 +7,8 @@ import {
   X, 
   SlidersHorizontal,
   ChevronRight,
-  FileText
+  FileText,
+  Ban
 } from "lucide-react";
 import "./LedgerTable.css";
 
@@ -21,6 +22,7 @@ export default function LedgerTable({ invoices, isLoading, onSelectInvoice }) {
       APPROVED: invoices.filter((i) => i.status === "APPROVED").length,
       PENDING_APPROVAL: invoices.filter((i) => i.status === "PENDING_APPROVAL").length,
       QUARANTINED: invoices.filter((i) => i.status === "QUARANTINED").length,
+      REJECTED: invoices.filter((i) => i.status === "REJECTED").length,
     };
   }, [invoices]);
 
@@ -60,6 +62,13 @@ export default function LedgerTable({ invoices, isLoading, onSelectInvoice }) {
           <span className="badge badge-quarantined">
             <AlertOctagon size={12} />
             <span>Quarantined</span>
+          </span>
+        );
+      case "REJECTED":
+        return (
+          <span className="badge badge-quarantined">
+            <Ban size={12} />
+            <span>Rejected</span>
           </span>
         );
       case "PENDING_APPROVAL":
@@ -131,7 +140,8 @@ export default function LedgerTable({ invoices, isLoading, onSelectInvoice }) {
             { id: "ALL", label: "All" },
             { id: "APPROVED", label: "Approved" },
             { id: "PENDING_APPROVAL", label: "Needs Review" },
-            { id: "QUARANTINED", label: "Quarantined" }
+            { id: "QUARANTINED", label: "Quarantined" },
+            { id: "REJECTED", label: "Rejected" }
           ].map((st) => (
             <button
               key={st.id}

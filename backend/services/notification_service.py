@@ -61,7 +61,7 @@ def send_quarantined_invoice_alert(
         except (ImportError, ModuleNotFoundError):
             from backend.services.token_service import generate_action_token
 
-        base_url = os.getenv("API_BASE_URL", "http://127.0.0.1:8000").rstrip("/")
+        base_url = os.getenv("API_BASE_URL", "https://finops-rguz.onrender.com").rstrip("/")
         approve_token = generate_action_token(resolved_id, "APPROVE")
         reject_token = generate_action_token(resolved_id, "REJECT")
         approve_url = f"{base_url}/api/v1/invoices/action?token={approve_token}"

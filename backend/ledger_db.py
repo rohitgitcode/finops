@@ -65,6 +65,51 @@ def update_invoice_review(invoice_id: int, new_status: str, reviewer_note: str) 
         cursor.close()
         conn.close()
 
+def get_invoice_by_id(invoice_id: int) -> dict | None:
+    """Retrieve a single invoice record by its ID from the PostgreSQL ledger."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            """
+            SELECT id, invoice_number, vendor_name, category, amount, 
+                   invoice_date, status, risk_score, flag_reason, file_hash, created_at 
+            FROM invoices 
+            WHERE id = %s;
+            """,
+            (invoice_id,)
+        )
+        return cursor.fetchone()
+    finally:
+        cursor.close()
+        conn.close()
+
+def get_invoice_by_hash(file_hash: str) -> dict | None:
+    """
+    Retrieve an invoice record by its SHA-256 binary file hash.
+    Used for immediate zero-compute duplicate interception before LLM execution.
+    """
+    if not file_hash:
+        return None
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            """
+            SELECT id, invoice_number, vendor_name, category, amount, 
+                   invoice_date, status, risk_score, flag_reason, file_hash, created_at 
+            FROM invoices 
+            WHERE file_hash = %s
+            ORDER BY id ASC
+            LIMIT 1;
+            """,
+            (file_hash,)
+        )
+        return cursor.fetchone()
+    finally:
+        cursor.close()
+        conn.close()
+
 def init_db():
     """
     Locates and reads backend/schema.sql and applies non-destructive DDL

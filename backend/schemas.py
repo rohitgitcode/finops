@@ -5,3 +5,7 @@ class ReviewRequest(BaseModel):
     action: str = Field(..., description="Review action: strictly APPROVE or REJECT")
     notes: str = Field(default="", description="Manager justification or override notes")
 
+class DecisionNote(BaseModel):
+    """Optional payload schema for direct /approve and /reject endpoints."""
+    notes: str = Field(default="", description="Manager justification or review notes")
+

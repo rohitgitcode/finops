@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS invoices (
     status VARCHAR(50) DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'APPROVED', 'QUARANTINED', 'PENDING_APPROVAL', 'REJECTED')),
     flag_reason TEXT DEFAULT '',
     raw_text TEXT,
+    file_hash VARCHAR(64),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -44,6 +45,7 @@ CREATE TABLE IF NOT EXISTS expense_policies (
 -- Non-destructive backward compatibility column checks
 ALTER TABLE invoices ADD COLUMN IF NOT EXISTS flag_reason TEXT DEFAULT '';
 ALTER TABLE invoices ADD COLUMN IF NOT EXISTS raw_text TEXT;
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS file_hash VARCHAR(64);
 ALTER TABLE invoices ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
 
 ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS action VARCHAR(100) DEFAULT 'SYSTEM_AUDIT';
@@ -56,5 +58,6 @@ ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME Z
 -- Performance Indexes
 CREATE INDEX IF NOT EXISTS idx_invoices_invoice_number ON invoices(invoice_number);
 CREATE INDEX IF NOT EXISTS idx_invoices_status ON invoices(status);
+CREATE INDEX IF NOT EXISTS idx_invoices_file_hash ON invoices(file_hash);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_invoice_id ON audit_logs(invoice_id);
 

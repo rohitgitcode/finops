@@ -11,7 +11,7 @@ class ResolutionAgent:
     def __init__(self):
         pass
 
-    def record_decision(self, extracted_data: Dict[str, Any], audit_result: Dict[str, Any], raw_text: str = "") -> Dict[str, Any]:
+    def record_decision(self, extracted_data: Dict[str, Any], audit_result: Dict[str, Any], raw_text: str = "", file_hash: str = None) -> Dict[str, Any]:
         """
         Persists the invoice state and records the decision history in the audit logs.
         """
@@ -34,9 +34,10 @@ class ResolutionAgent:
                 status, 
                 risk_score, 
                 flag_reason, 
-                raw_text
+                raw_text,
+                file_hash
             )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             RETURNING id, invoice_number, status, created_at;
             """
             cursor.execute(
@@ -50,7 +51,8 @@ class ResolutionAgent:
                     status,
                     risk_score,
                     flag_reasons,
-                    raw_text
+                    raw_text,
+                    file_hash
                 )
             )
             new_invoice = cursor.fetchone()

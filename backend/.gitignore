@@ -2,6 +2,8 @@
 .env
 .env.*
 !.env.example
+*.local*
+*.local.js
 
 # Python bytecode & cache
 __pycache__/
@@ -35,4 +37,3 @@ htmlcov/
 .idea/
 .DS_Store
 Thumbs.db
-

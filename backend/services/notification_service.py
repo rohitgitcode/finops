@@ -52,6 +52,9 @@ def send_quarantined_invoice_alert(
     # Generate one-click action buttons if invoice ID is available
     resolved_id = invoice_id or invoice_data.get("id") or invoice_data.get("invoice_id")
     action_block = ""
+    approve_url = None
+    reject_url = None
+
     if resolved_id:
         try:
             from services.token_service import generate_action_token
@@ -82,6 +85,33 @@ def send_quarantined_invoice_alert(
             </p>
         </div>
         """
+
+    # Format plain-text fallback body for strict email clients and preview panes
+    plain_text_lines = [
+        "[Risk Alert] High-Risk Invoice Quarantined",
+        "The Autonomous FinOps Auditor has intercepted and quarantined an inbound invoice requiring manual governance review.",
+        "",
+        f"Invoice Number: {inv_num}",
+        f"Vendor Name: {vendor}",
+        f"Amount: {formatted_amount}",
+        f"Risk Score: {risk_score} / 100",
+        f"Audit Reason: {flag_text}",
+        ""
+    ]
+
+    if approve_url and reject_url:
+        plain_text_lines.extend([
+            "One-Click Review Actions (Valid for 72 hours):",
+            f"Approve Invoice: {approve_url}",
+            f"Reject Invoice: {reject_url}",
+            ""
+        ])
+
+    plain_text_lines.extend([
+        "The original PDF is attached to this email. Please review and verify this transaction in your LedgerMind dashboard."
+    ])
+
+    plain_text = "\n".join(plain_text_lines)
 
     html_content = f"""
     <div style="font-family: Arial, sans-serif; padding: 24px; border: 1px solid #e0e0e0; border-radius: 8px; max-width: 600px; color: #202124;">
@@ -125,6 +155,7 @@ def send_quarantined_invoice_alert(
         "from": "onboarding@resend.dev",
         "to": [recipient],
         "subject": f"[ALERT] Quarantined Invoice #{inv_num} - {vendor}",
+        "text": plain_text,
         "html": html_content
     }
 
